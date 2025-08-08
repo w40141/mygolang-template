@@ -1,0 +1,28 @@
+services:
+  webapp:
+    build:
+      context: .
+      dockerfile: ./docker/webapp/Dockerfile
+    environment:
+      - EXPORSE_PORT=${WEBAPP_PORT}
+    ports:
+      - "${WEBAPP_PORT}:8080"
+  db:
+    image: mysql:latest
+    environment:
+      - MYSQL_ROOT_PASSWORD=${DB_ROOT_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+      - MYSQL_USER=${DB_USER}
+      - MYSQL_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${DB_PORT}:3306"
+  phpmyadmin:
+    image: phpmyadmin:latest
+    environment:
+      - PMA_HOST=db
+      - PMA_USER=${DB_USER}
+      - PMA_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "${PHPMYADMIN_PORT}:80"
+    depends_on:
+      - db

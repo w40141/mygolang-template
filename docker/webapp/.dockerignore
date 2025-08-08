@@ -1,0 +1,15 @@
+# Git
+.git
+.gitignore
+
+# Docker
+docker
+
+# Docker Compose
+compose.yaml
+
+# Environment variables
+env
+
+# Binaries
+*.bin
