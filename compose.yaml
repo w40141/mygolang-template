@@ -5,8 +5,17 @@ services:
       dockerfile: ./docker/webapp/Dockerfile
     environment:
       - EXPORSE_PORT=${WEBAPP_PORT}
+      - TZ=Asia/Tokyo
     ports:
       - "${WEBAPP_PORT}:8080"
+    develop:
+      watch:
+        - action: rebuild
+          path: .
+          ignore:
+            - .git
+            - README.md
+            - .gitignore
   db:
     image: mysql:latest
     environment:

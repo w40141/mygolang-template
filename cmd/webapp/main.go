@@ -3,25 +3,32 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
 	"github.com/w40141/mygolang-template/internal/webapp"
 )
 
+const serverPort = "8080"
+
 // main関数はプログラムのエントリーポイントです。
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+	slog.SetDefault(logger)
+
 	router := webapp.NewRouter()
 
 	exporsePort, ok := os.LookupEnv("EXPORSE_PORT")
 	if !ok {
-		log.Fatal("EXPORSE_PORT 環境変数が設定されていません")
+		slog.Error("EXPORSE_PORT 環境変数が設定されていません")
+		os.Exit(1)
 	}
 
-	// サーバーが起動することを示すメッセージを出力します。
-	fmt.Printf("Server is running on http://localhost:%s", exporsePort)
+	slog.Info("Server is running", "port", exporsePort)
 
-	// 8080ポートでサーバーを起動します。起動に失敗した場合はエラーを出力し、プログラムを終了します。
-	log.Fatal(http.ListenAndServe(":8080", router))
+	if e := http.ListenAndServe(fmt.Sprintf(":%s", serverPort), router); e != nil {
+		slog.Error("Failed to start server", "error", e)
+		os.Exit(1)
+	}
 }

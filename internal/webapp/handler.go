@@ -2,60 +2,82 @@
 package webapp
 
 import (
-	"fmt"
+	"encoding/json"
+	"log/slog"
 	"net/http"
+	"time"
 )
 
-// helloHandlerは /hell エンドポイントへのリクエストを処理します。
+// helloHandlerは /hello エンドポイントへのリクエストを処理します。
 func helloHandler(w http.ResponseWriter, r *http.Request) {
-	// GETメソッド以外は許可しない
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 
 		return
 	}
-	// レスポンスとして "Hello, World!" を書き込みます。
-	fmt.Fprintf(w, "Hello, World!")
+
+	message := map[string]string{
+		"message": "Hello, World!",
+	}
+
+	writeJSON(w, http.StatusOK, message)
 }
 
 // healthcheckHandlerは /healthcheck エンドポイントへのリクエストを処理します。
 func healthcheckHandler(w http.ResponseWriter, r *http.Request) {
-	// GETメソッド以外は許可しない
 	if r.Method != http.MethodGet {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 
 		return
 	}
-	// HTTPステータスコードを200 OKに設定します。
-	w.WriteHeader(http.StatusOK)
-	// レスポンスボディとして "OK" を書き込みます。
-	w.Write([]byte("OK"))
+
+	message := map[string]string{
+		"message": "Service is healthy",
+		"now":     time.Now().Format(time.RFC3339),
+	}
+
+	writeJSON(w, http.StatusOK, message)
 }
 
-// pingHandlerは /ping エンドポイントへのリクエストを処理します。
-func pingHandler(w http.ResponseWriter, r *http.Request) {
-	// GETメソッド以外は許可しない
-	if r.Method != http.MethodGet {
-		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+type errorResponse struct {
+	Title string `json:"title"`
+}
+
+func writeJSON(w http.ResponseWriter, code int, v any) {
+	w.Header().Set("Content-Type", "application/json")
+
+	res, err := json.Marshal(v)
+	if err != nil {
+		slog.Error("Error marshalling JSON", "error", err)
+
+		code = http.StatusInternalServerError
+		er := errorResponse{Title: "Internal Server Error"}
+
+		res, err = json.Marshal(er)
+		if err != nil {
+			slog.Error("Error marshalling error response", "error", err)
+			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+
+			return
+		}
+	}
+
+	w.WriteHeader(code)
+
+	if _, err := w.Write(res); err != nil {
+		slog.Error("Error writing response", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 
 		return
 	}
-	// HTTPステータスコードを200 OKに設定します。
-	w.WriteHeader(http.StatusOK)
-	// レスポンスボディとして "pong" を書き込みます。
-	w.Write([]byte("pong"))
 }
 
 // NewRouter は新しいHTTPルーターを作成し、エンドポイントとハンドラーを設定します。
 func NewRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// /hell のリクエストを hellHandler で処理するように設定します。
-	mux.HandleFunc("/hello", helloHandler)
-	// /healthcheck のリクエストを healthcheckHandler で処理するように設定します。
+	mux.HandleFunc("/", helloHandler)
 	mux.HandleFunc("/healthcheck", healthcheckHandler)
-	// /ping のリクエストを pingHandler で処理するように設定します。
-	mux.HandleFunc("/ping", pingHandler)
 
 	return mux
 }

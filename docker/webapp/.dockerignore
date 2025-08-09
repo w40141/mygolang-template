@@ -13,3 +13,6 @@ env
 
 # Binaries
 *.bin
+
+# other
+./README.md
